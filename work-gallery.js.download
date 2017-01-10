@@ -1,0 +1,115 @@
+var work_gallery = new Vue({
+	el: "#app",
+	data: {
+		lastScrollPositon: '',
+		projects: '',
+		showModal: false,
+		currentId: 0,
+		modalProject: '',
+		modalProjectPrev: '',
+		modalProjectNext: ''
+	},
+	created: function() {
+		this.fetchData();
+	},
+	updated: function() {
+		$(".Modal__navigation, .Modal__top").animate({opacity: 1}, 300);
+	},
+	methods: {
+		fetchData: function() {
+			var self = this;
+			$.ajax({
+				url: 'workGallery.json',
+				success: function(data) {
+					self.projects = data.projects
+				}
+			})
+		},
+		open: function(current_id) {
+			var self = this;
+			self.scrollTop(5);
+			self.showModal = true;
+			$("img.lazy.loaded, .Modal__navigation, .Modal__top").css('opacity', 0);
+			self.currentId = parseInt(current_id);
+			self.modalProject = self.projects[self.currentId];
+
+			$('body').addClass('modal-open');
+			self.lazyLoad();
+		    self.lastScrollPositon = $(document).scrollTop();
+
+			self.setPrevThumb();
+			self.setNextThumb();
+			self.setDeepLink('#?project=' + self.currentId);
+		},
+		setPrevThumb: function() {
+			// set previous project for modal navigation
+			if (this.currentId == 0) {
+				this.modalProjectPrev = this.projects[this.projects.length-1];
+			} else {
+				this.modalProjectPrev = this.projects[this.currentId-1];
+			}
+		},
+		setNextThumb:function() {
+			// set next project for modal navigation
+			if (this.currentId == this.projects.length-1) {
+				this.modalProjectNext = this.projects[0];
+			} else {
+				this.modalProjectNext = this.projects[this.currentId+1];
+			}
+		},
+		setLocationHash: function() {
+			hash_url = '#?project=' + this.currentId;
+
+			if(history.pushState) {
+				history.pushState(null, null, hash_url);
+			}
+			else {
+				location.hash = hash_url;
+			}
+		},
+		lazyLoad: function() {
+			this.$nextTick(function(){
+				$(".Modal img.lazy").lazyload({
+					container: $('.Modal'),
+			        effect: "fadeIn",
+			        placeholder: "img/lazy_placeholder.svg",
+			        threshold: 2200,
+			        load: function() {
+			        	$(this).addClass('loaded');
+			        	$(this).animate({opacity: 1}, 300);
+			        }
+			    });
+    		});
+		},
+		close: function() {
+			this.showModal = false;
+
+			$('body').removeClass('modal-open');
+			$('html, body').scrollTop(this.lastScrollPositon);
+
+			this.setDeepLink(' ');
+		},
+		setDeepLink: function(link) {
+			hash_url = link;
+
+			if(history.pushState) {
+				history.pushState(null, null, hash_url);
+			}
+			else {
+				location.hash = hash_url;
+			}
+		},
+		scrollTop: function(duration) {
+			$('.Modal').animate({
+		        scrollTop: 0
+		    }, duration, "easeInOutQuart");
+		},
+		// close: function() {
+		// 	this.showModal = false;
+		// 	this.setDeepLink(' ');
+		// 	$('body').removeClass('modal-open');
+
+		// 	$('html, body').scrollTop(this.lastScrollPositon);
+		// }
+	}
+});
